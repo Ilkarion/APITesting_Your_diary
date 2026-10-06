@@ -1,1 +1,890 @@
-
+openapi: '3.0.0'
+info:
+  title: GeneratedAPI_2026-10-06-2007
+  description: |
+    This API provides a comprehensive user authentication and diary management system built with Express.js and Supabase.
+    Key features include user registration with email verification, JWT-based authentication with access and refresh tokens stored in HTTP-only cookies,
+    diary record CRUD operations, user settings management (email, password, username changes), and health check endpoints.
+    The API enforces CORS with specific allowed origins and secure cookie handling depending on environment.
+    Error handling uses standard HTTP status codes with JSON error messages.
+  version: '1.0.0'
+servers:
+  - url: /
+    description: Base server URL, routes are prefixed with /api
+paths:
+  /api/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register user and send email verification
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  nullable: true
+                  example: johndoe
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  format: password
+                  example: strongPassword123
+              required:
+                - email
+                - password
+      responses:
+        "200":
+          description: Registration successful, confirmation email sent
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Registration successful. Please check your email to confirm your account.
+        "400":
+          description: Missing fields or database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/confirm:
+    get:
+      tags:
+        - Authentication
+      summary: Confirm user email via token
+      operationId: confirmEmail
+      parameters:
+        - name: token
+          in: query
+          description: Email confirmation token
+          required: true
+          schema:
+            type: string
+            example: "abcdef1234567890abcdef1234567890"
+      responses:
+        "200":
+          description: Email confirmation successful
+          content:
+            text/plain:
+              schema:
+                type: string
+                example: Email confirmed successfully.
+        "400":
+          description: Missing or invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/login:
+    post:
+      tags:
+        - Authentication
+      summary: User login and issue JWT tokens
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                  example: john@example.com
+                password:
+                  type: string
+                  format: password
+                  example: strongPassword123
+              required:
+                - email
+                - password
+      responses:
+        "200":
+          description: Login successful, tokens set in cookies
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged in successfully.
+        "400":
+          description: Missing or invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Email not confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/refresh:
+    post:
+      tags:
+        - Authentication
+      summary: Refresh access token using refresh token cookie
+      operationId: refreshAccessToken
+      responses:
+        "200":
+          description: Access token refreshed and set in cookie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Access token refreshed.
+        "401":
+          description: Missing or invalid refresh token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/me:
+    get:
+      tags:
+        - User
+      summary: Get current authenticated user info
+      operationId: getCurrentUser
+      responses:
+        "200":
+          description: User information retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user:
+                    $ref: '#/components/schemas/UserInfo'
+        "401":
+          description: Unauthorized - invalid or missing access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Forbidden - token invalid or expired
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/logout:
+    post:
+      tags:
+        - Authentication
+      summary: Logout user and clear authentication cookies
+      operationId: logoutUser
+      responses:
+        "200":
+          description: Logged out successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Logged out successfully.
+  /api/ping:
+    get:
+      tags:
+        - Utility
+      summary: Health check endpoint
+      operationId: ping
+      responses:
+        "200":
+          description: API is alive
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+  /api/diary:
+    post:
+      tags:
+        - Diary
+      summary: Get diary records and tags for authenticated user
+      operationId: getDiaryRecords
+      responses:
+        "200":
+          description: Diary records and tags retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  diaryRecords:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DiaryRecord'
+                  diaryAllTags:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        type: string
+        "400":
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Unauthorized - invalid or missing access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/diary-send:
+    post:
+      tags:
+        - Diary
+      summary: Add new diary record and update tags
+      operationId: addDiaryRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Diary record fields and tags info
+              properties:
+                title:
+                  type: string
+                  example: "My day at the park"
+                date:
+                  type: string
+                  format: date
+                  example: "2026-10-06"
+                feels:
+                  type: string
+                  example: "happy"
+                tags:
+                  type: array
+                  items:
+                    type: string
+                  example: ["outdoors", "fun"]
+                color_Tags:
+                  type: array
+                  items:
+                    type: string
+                  example: ["green", "blue"]
+                highlights:
+                  type: string
+                  example: "Had a great picnic"
+                all_Tags:
+                  type: array
+                  items:
+                    type: string
+                all_Color_Tags:
+                  type: array
+                  items:
+                    type: string
+      responses:
+        "200":
+          description: Diary record and tags added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Diary record added successfully.
+        "400":
+          description: Database error or bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Unauthorized - invalid or missing access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/diary-allTags:
+    post:
+      tags:
+        - Diary
+      summary: Get all tags for authenticated user
+      operationId: getAllDiaryTags
+      responses:
+        "200":
+          description: User's tags collection retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  all_Tags:
+                    type: array
+                    items:
+                      type: string
+                  all_Color_Tags:
+                    type: array
+                    items:
+                      type: string
+        "401":
+          description: Unauthorized - invalid or missing access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/diary-record/{id}:
+    get:
+      tags:
+        - Diary
+      summary: Get diary record by ID
+      operationId: getDiaryRecordById
+      parameters:
+        - name: id
+          in: path
+          description: Diary record ID
+          required: true
+          schema:
+            type: integer
+            example: 123
+      responses:
+        "200":
+          description: Diary record details retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DiaryRecordDetail'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Diary record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/diary-edit:
+    post:
+      tags:
+        - Diary
+      summary: Edit diary record by ID
+      operationId: editDiaryRecord
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                record:
+                  type: object
+                  properties:
+                    id_record:
+                      type: integer
+                      example: 123
+                    title:
+                      type: string
+                      example: "Updated title"
+                    date:
+                      type: string
+                      format: date
+                      example: "2026-10-07"
+                    feels:
+                      type: string
+                      example: "excited"
+                    tags:
+                      type: array
+                      items:
+                        type: string
+                    color_Tags:
+                      type: array
+                      items:
+                        type: string
+                    highlights:
+                      type: string
+                    all_Tags:
+                      type: array
+                      items:
+                        type: string
+                    all_Color_Tags:
+                      type: array
+                      items:
+                        type: string
+      responses:
+        "200":
+          description: Diary record updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Diary record updated successfully.
+        "400":
+          description: Database error or bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Diary record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/diary-delete/{id}:
+    delete:
+      tags:
+        - Diary
+      summary: Delete diary record by ID
+      operationId: deleteDiaryRecord
+      parameters:
+        - name: id
+          in: path
+          description: Diary record ID
+          required: true
+          schema:
+            type: integer
+            example: 123
+      responses:
+        "200":
+          description: Diary record deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Diary record deleted successfully.
+        "400":
+          description: Database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: Diary record not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/change-email-request:
+    post:
+      tags:
+        - User Settings
+      summary: Request email change and send confirmation email
+      operationId: requestEmailChange
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                newEmail:
+                  type: string
+                  format: email
+                  example: newemail@example.com
+              required:
+                - newEmail
+      responses:
+        "200":
+          description: Confirmation email sent for email change
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Confirmation email sent to new email address.
+        "403":
+          description: No valid access token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/change-email-confirm:
+    get:
+      tags:
+        - User Settings
+      summary: Confirm new email via token
+      operationId: confirmEmailChange
+      parameters:
+        - name: token
+          in: query
+          description: Email change confirmation token
+          required: true
+          schema:
+            type: string
+            example: "abcdef1234567890abcdef1234567890"
+      responses:
+        "200":
+          description: Email updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Email updated successfully.
+        "400":
+          description: Missing token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Invalid token
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "500":
+          description: Server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/change-password:
+    post:
+      tags:
+        - User Settings
+      summary: Change user password
+      operationId: changePassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                  example: oldPassword123
+                newPassword:
+                  type: string
+                  format: password
+                  example: newStrongPassword456
+              required:
+                - currentPassword
+                - newPassword
+      responses:
+        "200":
+          description: Password updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Password updated successfully.
+        "400":
+          description: Missing or invalid current password
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "404":
+          description: User not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/change-username:
+    post:
+      tags:
+        - User Settings
+      summary: Change username
+      operationId: changeUsername
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username:
+                  type: string
+                  example: newusername
+              required:
+                - username
+      responses:
+        "200":
+          description: Username updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Username updated successfully.
+        "400":
+          description: Missing username or database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /api/user-delete:
+    delete:
+      tags:
+        - User Settings
+      summary: Delete user account
+      operationId: deleteUserAccount
+      responses:
+        "200":
+          description: User account deleted successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: User account deleted successfully.
+        "400":
+          description: Database error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: access_token
+      description: Access token stored in HTTP-only cookie
+  schemas:
+    Error:
+      type: object
+      properties:
+        message:
+          type: string
+          example: Error message describing the issue
+    UserInfo:
+      type: object
+      properties:
+        username:
+          type: string
+          example: johndoe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-10-01T12:00:00Z'
+    DiaryRecord:
+      type: object
+      properties:
+        id_record:
+          type: integer
+          example: 123
+        title:
+          type: string
+          example: "A day in the life"
+        date:
+          type: string
+          format: date
+          example: "2026-10-06"
+        feels:
+          type: string
+          example: "happy"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["work", "exercise"]
+        color_Tags:
+          type: array
+          items:
+            type: string
+          example: ["red", "blue"]
+        highlights:
+          type: string
+          example: "Completed a marathon"
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-10-06T15:30:00Z'
+    DiaryRecordDetail:
+      allOf:
+        - $ref: '#/components/schemas/DiaryRecord'
+        - type: object
+          properties:
+            all_Tags:
+              type: array
+              items:
+                type: string
+            all_Color_Tags:
+              type: array
+              items:
+                type: string
+    User:
+      type: object
+      description: User model stored in database
+      properties:
+        id:
+          type: integer
+          example: 1
+        username:
+          type: string
+          example: johndoe
+        email:
+          type: string
+          format: email
+          example: john@example.com
+        password:
+          type: string
+          description: Hashed password (bcrypt)
+          example: "$2b$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36Z1Z6a1b6"
+        is_confirmed:
+          type: boolean
+          example: true
+        confirm_token:
+          type: string
+          example: "abcdef1234567890abcdef1234567890"
+        new_email:
+          type: string
+          format: email
+          nullable: true
+          example: newemail@example.com
+        email_change_token:
+          type: string
+          nullable: true
+          example: "123456abcdef7890abcdef1234567890"
+        created_at:
+          type: string
+          format: date-time
+          example: '2026-10-01T12:00:00Z'
+security:
+  - cookieAuth: []
