@@ -8,5 +8,5 @@
 - !!! Firstly to start testing this api u need register AND confirm your account via EMAIL not via API !!!
 - Added to global variables fields: password & email and others to automatically insert them into ALL api requests.
 - Also after first request u need wait answer 1-5 minutes bcs server needs time to wake up from sleep(free plan)
-- api/confirm & apy/refresh - was not tested
+- api/confirm & api/refresh & api/ping- was not tested
 
