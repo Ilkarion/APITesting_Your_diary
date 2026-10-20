@@ -131,7 +131,7 @@ paths:
                 properties:
                   message:
                     type: string
-                    example: Logged in successfully.
+                    example: Logged in!
         "400":
           description: Missing or invalid credentials
           content:
