@@ -1,12 +1,31 @@
 ## API Documentation
 
-[Swagger UI Documentation](https://ilkarion.github.io/APITesting_Your_diary/)
+- API Documentation: [Swagger UI](https://ilkarion.github.io/APITesting_Your_diary/)
+- Postman Collection: [Add repository link]
+- Test Documentation: [Add report link]
 
 
-## Attention!!!
-- !! You cant test my api without  url adress of my server. I wont show it because of security. So results of api testing u can see on screenshots down under this text
-- !!! Firstly to start testing this api u need register AND confirm your account via EMAIL not via API !!!
-- Added to global variables fields: password & email and others to automatically insert them into ALL api requests.
-- Also after first request u need wait answer 1-5 minutes bcs server needs time to wake up from sleep(free plan)
-- api/confirm & api/refresh & api/ping & api/change-email-confirm- was not tested
+# API Testing — Your Diary
 
+## Project Overview
+
+This project demonstrates manual API testing of a diary application using Postman.
+
+The goal was to verify API functionality, validate responses, test authentication, and identify potential issues in backend validation.
+
+## Tools & Technologies
+
+- **Postman** — API requests, test scripts, and assertions
+- **JavaScript** — automated checks within Postman
+- **OpenAPI / Swagger UI** — API documentation
+- **GitHub** — version control and project documentation
+
+## Testing Scope
+
+- User registration and login
+- Authentication and session cookies
+- User profile endpoints
+- Diary entry operations
+- Positive and negative scenarios
+- Response status, body, and schema validation
+- Backend input validation
