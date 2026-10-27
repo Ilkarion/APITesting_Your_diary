@@ -32,7 +32,7 @@ Counts are of **test cases**. Evidence-based counts are zero because nothing has
 
 ## 4. Result log
 
-<img src="../imgs/run results.png" width="400" height="400" alt="Screenshot">
+<img src="imgs/run results.png" width="400" height="400" alt="Screenshot">
 
 Verdict values: *Passed* 360 · *Failed-Bugs* 11.
 
