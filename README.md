@@ -9,7 +9,7 @@
 
 ## Project Overview
 
-This project demonstrates manual API testing of a diary application using Postman.
+This project demonstrates manual & automation API testing of a diary application using Postman.
 
 The goal was to verify API functionality, validate responses, test authentication, and identify potential issues in backend validation.
 
