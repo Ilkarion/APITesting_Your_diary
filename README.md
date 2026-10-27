@@ -1,8 +1,8 @@
 ## API Documentation
 
 - API Documentation: [Swagger UI](https://ilkarion.github.io/APITesting_Your_diary/)
-- Postman Collection: [Add repository link]
-- Test Documentation: [Add report link]
+- Postman Collection: [Postman](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Your-Diary%20API.postman_collection.json)
+- Test Documentation: [Documnentation](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Test_Plan.md)
 
 
 # API Testing — Your Diary
