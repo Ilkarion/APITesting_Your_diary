@@ -1,6 +1,6 @@
 Examples of running the endpoints to check whether the bugs have been fixed:
 
-*img*
+<img src="imgs/bugs-example.png" width="400" height="400" alt="Screenshot">
 
 > All bugs and their documentation can also be found in my [Postman Collection](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Your-Diary%20API.postman_collection.json).
 
