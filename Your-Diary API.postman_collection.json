@@ -1,0 +1,4875 @@
+{
+  "info": {
+    "_postman_id": "caa9b650-d44c-4dd2-927d-7f8285da4171",
+    "name": "Your-Diary API",
+    "description": "API tests for the Your-Diary backend (Express + Supabase). Auth is cookie based: `01 Auth` logs in once and the Postman cookie jar sends the session cookies with every following request.\n\n**Run it:** open the collection in the Collection Runner and run it top to bottom. Folders are ordered so that every folder finds the session state it needs. Requests that send e-mails, need a second account or delete data are skipped by default.\n\n| Variable | Purpose |\n|---|---|\n| `base` | Server URL, for example `http://localhost:3001` |\n| `email`, `password` | A confirmed test account (create it once on the website) |\n| `new_password` | Temporary password for the password round trip |\n| `email_b`, `password_b` | Optional second confirmed account for the cross-user tests |\n| `allow_email_tests` | `true` runs requests that send real e-mails |\n| `allow_destructive` | `true` runs the account deletion |\n| `max_response_ms` | Response-time limit checked for every request |\n\nVariables starting with `rt_` are runtime state and are managed by the scripts.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "_exporter_id": "31955303"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "item": [
+        {
+          "name": "Ping - server is up",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.variables.set(\"max_response_ms\", 60000); // the first request may hit a cold start"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Content-Type is application/json\", function () {\n    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\n});\n\npm.test(\"Body is { \\\"status\\\": \\\"ok\\\" }\", function () {\n    pm.expect(pm.response.json().status).to.eql(\"ok\");\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/ping",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "ping"
+              ]
+            },
+            "description": "Keep-alive endpoint, no authentication. The first request of a run may hit a cold start, so the response-time limit is relaxed here."
+          },
+          "response": []
+        }
+      ],
+      "description": "Smoke test: the server answers before anything else runs."
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Positive",
+          "item": [
+            {
+              "name": "register - user A",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"'Registered' - msg\", function () {\r\n    var jsonData = pm.response.json();\r\n    pm.expect(jsonData.message).to.eql(\"Registered! Check your email to confirm.\");\r\n});\r\n\r\npm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"username\": \"Ilkarion_API\",\r\n  \"email\": \"{{email}}\",\r\n  \"password\":\"{{password}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/register",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "register"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "register - user B",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"'Registered' - msg\", function () {\r\n    var jsonData = pm.response.json();\r\n    pm.expect(jsonData.message).to.eql(\"Registered! Check your email to confirm.\");\r\n});\r\n\r\npm.test(\"Status code is 200\", function () {\r\n    pm.response.to.have.status(200);\r\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\r\n  \"username\": \"Ilkarion_API_B\",\r\n  \"email\": \"{{email_b}}\",\r\n  \"password\":\"{{password_b}}\"\r\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/register",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "register"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Login - valid credentials",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Content-Type is application/json\", function () {\n    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\n});\n\npm.test(\"Message is \\\"Logged in!\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");\n});\n\nconst cookies = pm.response.headers.all()\n    .filter(h => h.key.toLowerCase() === \"set-cookie\");\n\npm.test(\"access_token cookie attributes\", () => {\n    pm.expect(cookies).to.match(/access_token=.*?Max-Age=900/i);\n    pm.expect(cookies).to.match(/access_token=.*?HttpOnly/i);\n});\n\npm.test(\"refresh_token cookie attributes\", () => {\n    pm.expect(cookies).to.match(/refresh_token=.*?Max-Age=604800/i);\n    pm.expect(cookies).to.match(/refresh_token=.*?HttpOnly/i);\n});\n\npm.test(\"Tokens are not leaked in the response body\", function () {\n    pm.expect(pm.response.text()).to.not.match(/eyJ[A-Za-z0-9_-]+\\./);\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                },
+                "description": "Logs in with the confirmed test account. The session lives in two HttpOnly cookies (`access_token` 15 min, `refresh_token` 7 days). Postman's cookie jar sends them to every following request automatically."
+              },
+              "response": []
+            },
+            {
+              "name": "Refresh token - valid refresh cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Content-Type is application/json\", function () {\n    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\n});\n\npm.test(\"Message is \\\"Token refreshed\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Token refreshed\");\n});\n\nconst cookies = pm.response.headers.all()\n    .filter(h => h.key.toLowerCase() === \"set-cookie\");\n\npm.test(\"access_token cookie attributes\", () => {\n    pm.expect(cookies).to.match(/access_token=.*?Max-Age=900/i);\n    pm.expect(cookies).to.match(/access_token=.*?HttpOnly/i);\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/refresh",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "refresh"
+                  ]
+                },
+                "description": "Uses the `refresh_token` cookie from the login above and issues a new `access_token`."
+              },
+              "response": []
+            }
+          ],
+          "description": "Happy path. Must run first: later folders rely on the session cookies set here."
+        },
+        {
+          "name": "Negative",
+          "item": [
+            {
+              "name": "Login - unknown e-mail",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Invalid email or password\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Invalid email or password\");",
+                      "});",
+                      "",
+                      "pm.test(\"No session cookie is issued\", function () {",
+                      "    const c = pm.response.headers.get(\"Set-Cookie\");",
+                      "    pm.expect(c || \"\").to.not.include(\"access_token=\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"nonexistent.user@example.com\",\n  \"password\": \"SomePassword123!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Login - wrong password",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Invalid email or password\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Invalid email or password\");",
+                      "});",
+                      "",
+                      "pm.test(\"No session cookie is issued\", function () {",
+                      "    const c = pm.response.headers.get(\"Set-Cookie\");",
+                      "    pm.expect(c || \"\").to.not.include(\"access_token=\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"WrongPassword123!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                },
+                "description": "Same error text as for an unknown e-mail, so the API does not reveal which e-mails are registered."
+              },
+              "response": []
+            },
+            {
+              "name": "Login - password missing",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Email and password required\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Email and password required\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Login - e-mail missing",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Email and password required\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Email and password required\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Login - empty body",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Email and password required\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Email and password required\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Invalid logins. None of them may create a session."
+        }
+      ],
+      "description": "Login and token refresh."
+    },
+    {
+      "name": "Account",
+      "item": [
+        {
+          "name": "Profile & username",
+          "item": [
+            {
+              "name": "Get current user",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Content-Type is application/json\", function () {\n    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\n});\n\npm.test(\"User fields are valid\", () => {\n    const user = pm.response.json().user;\n\n    pm.expect(user.username).to.be.a(\"string\");\n    pm.expect(user.email).to.be.a(\"string\");\n    pm.expect(user.created_at).to.be.a(\"string\");\n});\n\npm.test(\"Returned e-mail belongs to the logged-in account\", function () {\n    pm.expect(pm.response.json().user.email.toLowerCase()).to.eql(String(pm.variables.get(\"email\")).toLowerCase());\n});\n\npm.test(\"created_at is a valid date\", function () {\n    pm.expect(new Date(pm.response.json().user.created_at).toString()).to.not.eql(\"Invalid Date\");\n});\n\npm.test(\"No password data is exposed\", function () {\n    pm.expect(pm.response.json().user).to.not.have.any.keys(\"password\", \"password_hash\", \"hash\");\n});\n"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/me",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "me"
+                  ]
+                },
+                "description": "Returns the profile of the logged-in user. Also remembers the username so it can be restored later."
+              },
+              "response": []
+            },
+            {
+              "name": "Change username - valid",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set(\"rt_temp_username\", \"qa_\" + Date.now());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Username updated\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Username updated\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{rt_temp_username}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-username",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-username"
+                  ]
+                },
+                "description": "Changes the username to a unique temporary one. It is restored at the end of this folder."
+              },
+              "response": []
+            },
+            {
+              "name": "Get current user - username was changed",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Username equals the new value\", function () {",
+                      "    pm.expect(pm.response.json().user.username).to.eql(pm.collectionVariables.get(\"rt_temp_username\"));",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/me",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "me"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change username - empty value",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Username required\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Username required\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-username",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-username"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change username - field missing",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Username required\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Username required\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-username",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-username"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change username - restore original",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Message is \\\"Username updated\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Username updated\");\n});\n\npm.collectionVariables.unset(\"rt_temp_username\");"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{username}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-username",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-username"
+                  ]
+                },
+                "description": "Cleanup: puts the original username back."
+              },
+              "response": []
+            },
+            {
+              "name": "Get current user - username restored",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Username equals the original value\", function () {\n    pm.expect(pm.response.json().user.username).to.eql(pm.collectionVariables.get(\"username\"));\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/me",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "me"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Read the profile and change the username (the change is reverted at the end)."
+        },
+        {
+          "name": "Password",
+          "item": [
+            {
+              "name": "Change password - new password missing",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Passwords required\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Passwords required\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-password",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change password - current password missing",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Passwords required\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Passwords required\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newPassword\": \"{{new_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-password",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change password - wrong current password",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Current password incorrect\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Current password incorrect\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"WrongPassword123!\",\n  \"newPassword\": \"{{new_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-password",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change password - valid",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Password updated\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Password updated\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"{{password}}\",\n  \"newPassword\": \"{{new_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-password",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-password"
+                  ]
+                },
+                "description": "Changes the password to `new_password`. The next requests prove that it really changed, the last one in this folder restores the original password."
+              },
+              "response": []
+            },
+            {
+              "name": "Login - new password works",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Logged in!\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{new_password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Login - old password is rejected",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Invalid email or password\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Invalid email or password\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change password - restore original",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Password updated\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Password updated\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"{{new_password}}\",\n  \"newPassword\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-password",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-password"
+                  ]
+                },
+                "description": "Cleanup: puts the original password back. If a run was interrupted before this request, run it manually."
+              },
+              "response": []
+            },
+            {
+              "name": "Login - original password works again",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Logged in!\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Password change round trip: change, verify with a login, restore."
+        },
+        {
+          "name": "Change e-mail (sends e-mail)",
+          "item": [
+            {
+              "name": "Change e-mail request - valid",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Content-Type is application/json\", function () {\n    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\n});\n\npm.test(\"Message is \\\"Confirm new email first\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Confirm new email first\");\n});"
+                    ]
+                  }
+                },
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Unique data for this request only (local variables, nothing is persisted).\r\nconst stamp = Date.now();\r\nconst base = String(pm.variables.get(\"email\") || \"qa.user@example.com\");\r\nconst at = base.lastIndexOf(\"@\");\r\npm.variables.set(\"unique_email\", base.slice(0, at) + \"+qa\" + stamp + base.slice(at));\r\npm.variables.set(\"unique_username\", \"qa_user_\" + stamp);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newEmail\": \"{{email}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-email-request",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-email-request"
+                  ]
+                },
+                "description": "Sends a confirmation e-mail to the new address. The address is only changed after the link in that e-mail is opened, so the account stays untouched."
+              },
+              "response": []
+            }
+          ],
+          "description": "Skipped unless collection variable `allow_email_tests` is `true` (it sends a real e-mail).",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Safety guard: this request is skipped unless collection variable \"allow_email_tests\" is \"true\".",
+                  "if (pm.variables.get(\"allow_email_tests\") !== \"true\") {",
+                  "    if (pm.execution && typeof pm.execution.skipRequest === \"function\") {",
+                  "        pm.execution.skipRequest();",
+                  "    } else {",
+                  "        throw new Error(\"Blocked: set collection variable allow_email_tests=true to run requests that send e-mails\");",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Profile and account settings. Uses the session from `01 Auth`."
+    },
+    {
+      "name": "Diary",
+      "item": [
+        {
+          "name": "CRUD flow",
+          "item": [
+            {
+              "name": "List records and tags - before",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Content-Type is application/json\", function () {\n    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\n});\n\npm.test(\"Diary response matches schema\", () => {\n    const body = pm.response.json();\n\n    pm.expect(body.diaryRecords).to.be.an(\"array\");\n    pm.expect(body.diaryAllTags).to.be.an(\"array\");\n\n    body.diaryRecords.forEach(record => {\n        pm.expect(record).to.have.all.keys(\n            \"id_record\", \"id_user\", \"title\", \"date\", \"created_at\"\n        );\n    });\n});\n\npm.test(\"Records are sorted by created_at, newest first\", function () {\n    const times = pm.response.json().diaryRecords.map(function (r) { return new Date(r.created_at).getTime(); });\n    const sorted = times.slice().sort(function (a, b) { return b - a; });\n    pm.expect(times).to.eql(sorted);\n});\n\npm.collectionVariables.set(\"rt_records_before\", pm.response.json().diaryRecords.length);"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary"
+                  ]
+                },
+                "description": "Remembers how many records exist, so the following steps can check exact counts."
+              },
+              "response": []
+            },
+            {
+              "name": "Add record",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set(\"rt_record_title\", \"QA record \" + new Date().toISOString());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Record and tags added\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Record and tags added\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"{{rt_record_title}}\",\n  \"date\": \"2026-10-26\",\n  \"feels\": [\n    \"happy\"\n  ],\n  \"tags\": [\n    \"outdoors\",\n    \"fun\"\n  ],\n  \"color_Tags\": [\n    \"green\",\n    \"blue\"\n  ],\n  \"highlights\": [\n    {\n      \"text\": \"Had a great picnic\",\n      \"color\": \"green\"\n    }\n  ],\n  \"all_Tags\": [\n    \"outdoors\",\n    \"fun\",\n    \"apple\"\n  ],\n  \"all_Color_Tags\": [\n    \"green\",\n    \"blue\",\n    \"purple\"\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/diary-send",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-send"
+                  ]
+                },
+                "description": "Creates a record with a unique title and saves the user's tag lists."
+              },
+              "response": []
+            },
+            {
+              "name": "List records and tags - after add",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Response body matches the expected schema\", function () {",
+                      "    pm.response.to.have.jsonSchema({\"type\": \"object\", \"required\": [\"diaryRecords\", \"diaryAllTags\"], \"properties\": {\"diaryRecords\": {\"type\": \"array\", \"items\": {\"type\": \"object\", \"required\": [\"id_record\", \"id_user\", \"title\", \"date\", \"created_at\"]}}, \"diaryAllTags\": {\"type\": [\"object\", \"array\"]}}});",
+                      "});",
+                      "",
+                      "pm.test(\"Records are sorted by created_at, newest first\", function () {",
+                      "    const times = pm.response.json().diaryRecords.map(function (r) { return new Date(r.created_at).getTime(); });",
+                      "    const sorted = times.slice().sort(function (a, b) { return b - a; });",
+                      "    pm.expect(times).to.eql(sorted);",
+                      "});",
+                      "",
+                      "const json = pm.response.json();",
+                      "const title = pm.collectionVariables.get(\"rt_record_title\");",
+                      "const before = Number(pm.collectionVariables.get(\"rt_records_before\"));",
+                      "const created = json.diaryRecords.find(function (r) { return r.title === title; });",
+                      "",
+                      "pm.test(\"Record count increased by 1\", function () {",
+                      "    pm.expect(json.diaryRecords.length).to.eql(before + 1);",
+                      "});",
+                      "",
+                      "pm.test(\"The new record is in the list\", function () {",
+                      "    pm.expect(created, \"record titled \" + title).to.be.an(\"object\");",
+                      "});",
+                      "",
+                      "pm.test(\"The new record is the newest one\", function () {",
+                      "    pm.expect(json.diaryRecords[0].title).to.eql(title);",
+                      "});",
+                      "",
+                      "pm.test(\"Stored fields match what was sent\", function () {",
+                      "    pm.expect(created).to.be.an(\"object\");",
+                      "    pm.expect(created.date).to.eql(\"2026-10-26\");",
+                      "    pm.expect(created.feels).to.eql([\"happy\"]);",
+                      "    pm.expect(created.tags).to.eql([\"outdoors\", \"fun\"]);",
+                      "    pm.expect(created.color_Tags).to.eql([\"green\", \"blue\"]);",
+                      "    pm.expect(created.highlights).to.eql([{ text: \"Had a great picnic\", color: \"green\" }]);",
+                      "});",
+                      "",
+                      "pm.test(\"Record owner matches the owner of the tag lists\", function () {",
+                      "    pm.expect(created.id_user).to.eql(json.diaryAllTags.id_user);",
+                      "});",
+                      "",
+                      "pm.test(\"User tag lists were saved\", function () {",
+                      "    pm.expect(json.diaryAllTags.all_Tags).to.eql([\"outdoors\", \"fun\", \"apple\"]);",
+                      "    pm.expect(json.diaryAllTags.all_Color_Tags).to.eql([\"green\", \"blue\", \"purple\"]);",
+                      "});",
+                      "",
+                      "if (created) {",
+                      "    pm.collectionVariables.set(\"rt_record_id\", created.id_record);",
+                      "}"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary"
+                  ]
+                },
+                "description": "Finds the new record by its title and remembers its id for the next steps."
+              },
+              "response": []
+            },
+            {
+              "name": "Get record by id",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Response body matches the expected schema\", function () {",
+                      "    pm.response.to.have.jsonSchema({\"type\": \"object\", \"required\": [\"id_record\", \"id_user\", \"title\", \"date\", \"feels\", \"tags\", \"color_Tags\", \"highlights\"]});",
+                      "});",
+                      "",
+                      "pm.test(\"Record id equals the requested id\", function () {",
+                      "    pm.expect(pm.response.json().id_record).to.eql(pm.collectionVariables.get(\"rt_record_id\"));",
+                      "});",
+                      "",
+                      "pm.test(\"Title equals the title that was sent\", function () {",
+                      "    pm.expect(pm.response.json().title).to.eql(pm.collectionVariables.get(\"rt_record_title\"));",
+                      "});",
+                      "",
+                      "pm.test(\"Stored fields match what was sent\", function () {",
+                      "    const rec = pm.response.json();",
+                      "    pm.expect(rec.date).to.eql(\"2026-10-26\");",
+                      "    pm.expect(rec.feels).to.eql([\"happy\"]);",
+                      "    pm.expect(rec.tags).to.eql([\"outdoors\", \"fun\"]);",
+                      "    pm.expect(rec.color_Tags).to.eql([\"green\", \"blue\"]);",
+                      "    pm.expect(rec.highlights).to.eql([{ text: \"Had a great picnic\", color: \"green\" }]);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-record/{{rt_record_id}}",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-record",
+                    "{{rt_record_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Edit record",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Record updated\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Record updated\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"record\": {\n    \"id_record\": \"{{rt_record_id}}\",\n    \"title\": \"{{rt_record_title}} (edited)\",\n    \"date\": \"2026-10-26\",\n    \"feels\": [\n      \"happy\",\n      \"test\"\n    ],\n    \"tags\": [\n      \"outdoors\",\n      \"fun\"\n    ],\n    \"color_Tags\": [\n      \"green\",\n      \"blue\"\n    ],\n    \"highlights\": [\n      {\n        \"text\": \"Had a great picnic\",\n        \"color\": \"green\"\n      }\n    ],\n    \"all_Tags\": [\n      \"outdoors\",\n      \"fun\",\n      \"apple\"\n    ],\n    \"all_Color_Tags\": [\n      \"green\",\n      \"blue\",\n      \"purple\"\n    ]\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/diary-edit",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-edit"
+                  ]
+                },
+                "description": "All fields must be wrapped in the top-level `record` object."
+              },
+              "response": []
+            },
+            {
+              "name": "Get record by id - after edit",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Title was updated\", function () {",
+                      "    pm.expect(pm.response.json().title).to.eql(pm.collectionVariables.get(\"rt_record_title\") + \" (edited)\");",
+                      "});",
+                      "",
+                      "pm.test(\"Feelings were updated\", function () {",
+                      "    pm.expect(pm.response.json().feels).to.eql([\"happy\", \"test\"]);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-record/{{rt_record_id}}",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-record",
+                    "{{rt_record_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get all tags",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Response body matches the expected schema\", function () {",
+                      "    pm.response.to.have.jsonSchema({\"type\": \"object\", \"required\": [\"all_Tags\", \"all_Color_Tags\"], \"properties\": {\"all_Tags\": {\"type\": \"array\"}, \"all_Color_Tags\": {\"type\": \"array\"}}});",
+                      "});",
+                      "",
+                      "pm.test(\"Tag lists contain the tags that were saved\", function () {",
+                      "    const json = pm.response.json();",
+                      "    pm.expect(json.all_Tags).to.include.members([\"outdoors\", \"fun\", \"apple\"]);",
+                      "    pm.expect(json.all_Color_Tags).to.include.members([\"green\", \"blue\", \"purple\"]);",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-allTags",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-allTags"
+                  ]
+                },
+                "description": "Read-only, but implemented as POST. No request body is needed."
+              },
+              "response": []
+            },
+            {
+              "name": "Delete record",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Record deleted\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Record deleted\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-delete/{{rt_record_id}}",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-delete",
+                    "{{rt_record_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get record by id - after delete",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 404\", function () {",
+                      "    pm.response.to.have.status(404);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Record not found\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Record not found\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-record/{{rt_record_id}}",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-record",
+                    "{{rt_record_id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List records and tags - after delete",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Record count is back to the original value\", function () {",
+                      "    pm.expect(pm.response.json().diaryRecords.length).to.eql(Number(pm.collectionVariables.get(\"rt_records_before\")));",
+                      "});",
+                      "",
+                      "pm.test(\"Deleted record is not in the list\", function () {",
+                      "    const id = pm.collectionVariables.get(\"rt_record_id\");",
+                      "    const ids = pm.response.json().diaryRecords.map(function (r) { return r.id_record; });",
+                      "    pm.expect(ids).to.not.include(id);",
+                      "});",
+                      "",
+                      "pm.collectionVariables.unset(\"rt_record_id\");",
+                      "pm.collectionVariables.unset(\"rt_record_title\");",
+                      "pm.collectionVariables.unset(\"rt_records_before\");"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary"
+                  ]
+                },
+                "description": "Cleanup check: the list is back to its original size. Also clears the temporary variables."
+              },
+              "response": []
+            }
+          ],
+          "description": "Create, read, update and delete one record. Every step checks the result of the previous one. Run the folder top to bottom."
+        },
+        {
+          "name": "Negative",
+          "item": [
+            {
+              "name": "Get record - id does not exist",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 404\", function () {",
+                      "    pm.response.to.have.status(404);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Record not found\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Record not found\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-record/00000000-0000-0000-0000-000000000000",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-record",
+                    "00000000-0000-0000-0000-000000000000"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get record - malformed id",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 404\", function () {",
+                      "    pm.response.to.have.status(404);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Record not found\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Record not found\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-record/not-a-valid-id",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-record",
+                    "not-a-valid-id"
+                  ]
+                },
+                "description": "A malformed id must not cause a server error."
+              },
+              "response": []
+            },
+            {
+              "name": "Edit record - id does not exist",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 404\", function () {",
+                      "    pm.response.to.have.status(404);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Record not found\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Record not found\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"record\": {\n    \"id_record\": \"00000000-0000-0000-0000-000000000000\",\n    \"title\": \"This record does not exist\",\n    \"date\": \"2026-10-26\",\n    \"feels\": [\n      \"happy\"\n    ],\n    \"tags\": [\n      \"outdoors\",\n      \"fun\"\n    ],\n    \"color_Tags\": [\n      \"green\",\n      \"blue\"\n    ],\n    \"highlights\": [\n      {\n        \"text\": \"Had a great picnic\",\n        \"color\": \"green\"\n      }\n    ],\n    \"all_Tags\": [\n      \"outdoors\",\n      \"fun\",\n      \"apple\"\n    ],\n    \"all_Color_Tags\": [\n      \"green\",\n      \"blue\",\n      \"purple\"\n    ]\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/diary-edit",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-edit"
+                  ]
+                },
+                "description": "The tag lists in the body equal the stored ones, so the (always executed) tag update changes nothing."
+              },
+              "response": []
+            }
+          ],
+          "description": "Requests for records that do not exist."
+        }
+      ],
+      "description": "Diary records and tag lists. Uses the session from `01 Auth`."
+    },
+    {
+      "name": "Registration",
+      "item": [
+        {
+          "name": "Negative (no side effects)",
+          "item": [
+            {
+              "name": "Register - e-mail missing",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Email and password required\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Email and password required\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"qa_missing_email\",\n  \"password\": \"ValidPass123!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/register",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "register"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Register - password missing",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Email and password required\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Email and password required\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"qa_missing_password\",\n  \"email\": \"qa.missing.password@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/register",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "register"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Register - empty body",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Email and password required\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Email and password required\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/register",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "register"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Register - e-mail already registered",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Unique data for this request only (local variables, nothing is persisted).",
+                      "const stamp = Date.now();",
+                      "const base = String(pm.variables.get(\"email\") || \"qa.user@example.com\");",
+                      "const at = base.lastIndexOf(\"@\");",
+                      "pm.variables.set(\"unique_email\", base.slice(0, at) + \"+qa\" + stamp + base.slice(at));",
+                      "pm.variables.set(\"unique_username\", \"qa_user_\" + stamp);"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Error message is a non-empty string\", function () {",
+                      "    pm.expect(pm.response.json().message).to.be.a(\"string\").and.not.empty;",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{unique_username}}\",\n  \"email\": \"{{email}}\",\n  \"password\": \"ValidPass123!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/register",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "register"
+                  ]
+                },
+                "description": "Uses the e-mail of the test account with a new username. Must be rejected and must not create an account."
+              },
+              "response": []
+            },
+            {
+              "name": "Register - username already taken",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Unique data for this request only (local variables, nothing is persisted).",
+                      "const stamp = Date.now();",
+                      "const base = String(pm.variables.get(\"email\") || \"qa.user@example.com\");",
+                      "const at = base.lastIndexOf(\"@\");",
+                      "pm.variables.set(\"unique_email\", base.slice(0, at) + \"+qa\" + stamp + base.slice(at));",
+                      "pm.variables.set(\"unique_username\", \"qa_user_\" + stamp);",
+                      "pm.variables.set(\"dup_username\", pm.collectionVariables.get(\"rt_original_username\") || pm.variables.get(\"username\"));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 400\", function () {",
+                      "    pm.response.to.have.status(400);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Error message is a non-empty string\", function () {",
+                      "    pm.expect(pm.response.json().message).to.be.a(\"string\").and.not.empty;",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{dup_username}}\",\n  \"email\": \"{{unique_email}}\",\n  \"password\": \"ValidPass123!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/register",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "register"
+                  ]
+                },
+                "description": "Uses a new e-mail with the username of the test account. Must be rejected and must not create an account."
+              },
+              "response": []
+            }
+          ],
+          "description": "Invalid registrations that the server rejects before or while saving. No accounts are created and no e-mails are sent."
+        },
+        {
+          "name": "Positive (sends e-mail)",
+          "item": [
+            {
+              "name": "Register - valid data",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "// Unique data for this request only (local variables, nothing is persisted).",
+                      "const stamp = Date.now();",
+                      "const base = String(pm.variables.get(\"email\") || \"qa.user@example.com\");",
+                      "const at = base.lastIndexOf(\"@\");",
+                      "pm.variables.set(\"unique_email\", base.slice(0, at) + \"+qa\" + stamp + base.slice(at));",
+                      "pm.variables.set(\"unique_username\", \"qa_user_\" + stamp);",
+                      "pm.collectionVariables.set(\"rt_pending_email\", pm.variables.get(\"unique_email\"));",
+                      "pm.collectionVariables.set(\"rt_pending_username\", pm.variables.get(\"unique_username\"));"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {",
+                      "    pm.response.to.have.status(200);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Registered! Check your email to confirm.\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Registered! Check your email to confirm.\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"{{rt_pending_username}}\",\n  \"email\": \"{{rt_pending_email}}\",\n  \"password\": \"ValidPass123!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/register",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "register"
+                  ]
+                },
+                "description": "Creates a new, unconfirmed account and sends a confirmation e-mail (to a plus-address of `email`)."
+              },
+              "response": []
+            },
+            {
+              "name": "Login - e-mail not confirmed",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Email not confirmed\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Email not confirmed\");",
+                      "});",
+                      "",
+                      "pm.collectionVariables.unset(\"rt_pending_email\");",
+                      "pm.collectionVariables.unset(\"rt_pending_username\");"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{rt_pending_email}}\",\n  \"password\": \"ValidPass123!\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                },
+                "description": "The account that was just registered cannot log in until its e-mail is confirmed."
+              },
+              "response": []
+            }
+          ],
+          "description": "Skipped unless collection variable `allow_email_tests` is `true` (creates an unconfirmed account and sends an e-mail).",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Safety guard: this request is skipped unless collection variable \"allow_email_tests\" is \"true\".",
+                  "if (pm.variables.get(\"allow_email_tests\") !== \"true\") {",
+                  "    if (pm.execution && typeof pm.execution.skipRequest === \"function\") {",
+                  "        pm.execution.skipRequest();",
+                  "    } else {",
+                  "        throw new Error(\"Blocked: set collection variable allow_email_tests=true to run requests that send e-mails\");",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Account registration."
+    },
+    {
+      "name": "Authorization (cross-user)",
+      "item": [
+        {
+          "name": "User B - login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Logged in!\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email_b}}\",\n  \"password\": \"{{password_b}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User B - add a private record",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set(\"rt_title_b\", \"QA private record of user B \" + new Date().toISOString());"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Record and tags added\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Record and tags added\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"{{rt_title_b}}\",\n  \"date\": \"2026-10-26\",\n  \"feels\": [\n    \"happy\"\n  ],\n  \"tags\": [\n    \"private\"\n  ],\n  \"color_Tags\": [\n    \"red\"\n  ],\n  \"highlights\": [\n    {\n      \"text\": \"Had a great picnic\",\n      \"color\": \"green\"\n    }\n  ],\n  \"all_Tags\": [\n    \"private\"\n  ],\n  \"all_Color_Tags\": [\n    \"red\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/diary-send",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "diary-send"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User B - find own record id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Record of user B is in the list\", function () {",
+                  "    const title = pm.collectionVariables.get(\"rt_title_b\");",
+                  "    const rec = pm.response.json().diaryRecords.find(function (r) { return r.title === title; });",
+                  "    pm.expect(rec, \"record titled \" + title).to.be.an(\"object\");",
+                  "    pm.collectionVariables.set(\"rt_record_id_b\", rec.id_record);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/diary",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "diary"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User A - login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Logged in!\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User A - read the record of user B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Content-Type is application/json\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Record not found\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Record not found\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/diary-record/{{rt_record_id_b}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "diary-record",
+                "{{rt_record_id_b}}"
+              ]
+            },
+            "description": "A user must not be able to read records of another user."
+          },
+          "response": []
+        },
+        {
+          "name": "User A - edit the record of user B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Content-Type is application/json\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Record not found\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Record not found\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"record\": {\n    \"id_record\": \"{{rt_record_id_b}}\",\n    \"title\": \"Changed by user A\",\n    \"date\": \"2026-10-26\",\n    \"feels\": [\n      \"happy\"\n    ],\n    \"tags\": [\n      \"outdoors\",\n      \"fun\"\n    ],\n    \"color_Tags\": [\n      \"green\",\n      \"blue\"\n    ],\n    \"highlights\": [\n      {\n        \"text\": \"Had a great picnic\",\n        \"color\": \"green\"\n      }\n    ],\n    \"all_Tags\": [\n      \"outdoors\",\n      \"fun\",\n      \"apple\"\n    ],\n    \"all_Color_Tags\": [\n      \"green\",\n      \"blue\",\n      \"purple\"\n    ]\n  }\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/diary-edit",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "diary-edit"
+              ]
+            },
+            "description": "A user must not be able to change records of another user. The tag lists in the body equal user A's own lists."
+          },
+          "response": []
+        },
+        {
+          "name": "User A - delete the record of user B",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Request does not cause a server error\", function () {",
+                  "    pm.expect(pm.response.code).to.be.below(500);",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/diary-delete/{{rt_record_id_b}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "diary-delete",
+                "{{rt_record_id_b}}"
+              ]
+            },
+            "description": "The real check is the next steps: the record of user B must still exist afterwards."
+          },
+          "response": []
+        },
+        {
+          "name": "User B - login again",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Logged in!\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email_b}}\",\n  \"password\": \"{{password_b}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User B - record is untouched",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Title was not changed by user A\", function () {",
+                  "    pm.expect(pm.response.json().title).to.eql(pm.collectionVariables.get(\"rt_title_b\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/diary-record/{{rt_record_id_b}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "diary-record",
+                "{{rt_record_id_b}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User B - delete own record (cleanup)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Record deleted\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Record deleted\");",
+                  "});",
+                  "",
+                  "pm.collectionVariables.unset(\"rt_title_b\");",
+                  "pm.collectionVariables.unset(\"rt_record_id_b\");"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/diary-delete/{{rt_record_id_b}}",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "diary-delete",
+                "{{rt_record_id_b}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "User A - login again (restore session)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Logged in!\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Checks that one user cannot read, change or delete the records of another user. Skipped unless collection variables `email_b` and `password_b` (a second confirmed account) are set.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Safety guard: cross-user tests need a second confirmed account (email_b / password_b).\nif (!pm.variables.get(\"email_b\") || !pm.variables.get(\"password_b\")) {\n    if (pm.execution && typeof pm.execution.skipRequest === \"function\") {\n        pm.execution.skipRequest();\n    } else {\n        throw new Error(\"Blocked: set collection variables email_b and password_b to run cross-user tests\");\n    }\n}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Bugs",
+      "item": [
+        {
+          "name": "cross-user",
+          "item": [
+            {
+              "name": "User_B - login",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Message is \\\"Logged in!\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email_b}}\",\n  \"password\": \"{{password_b}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User_B - add a private record",
+              "event": [
+                {
+                  "listen": "prerequest",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.collectionVariables.set(\"rt_title_b\", \"QA private record of user B \" + new Date().toISOString());"
+                    ]
+                  }
+                },
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Message is \\\"Record and tags added\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Record and tags added\");\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"{{rt_title_b}}\",\n  \"date\": \"2026-10-26\",\n  \"feels\": [\n    \"happy\"\n  ],\n  \"tags\": [\n    \"private\"\n  ],\n  \"color_Tags\": [\n    \"red\"\n  ],\n  \"highlights\": [\n    {\n      \"text\": \"Had a great picnic\",\n      \"color\": \"green\"\n    }\n  ],\n  \"all_Tags\": [\n    \"private\"\n  ],\n  \"all_Color_Tags\": [\n    \"red\"\n  ]\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/diary-send",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-send"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User_B - find own record id",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Record of user B is in the list\", function () {\n    const title = pm.collectionVariables.get(\"rt_title_b\");\n    const rec = pm.response.json().diaryRecords.find(function (r) { return r.title === title; });\n    pm.expect(rec, \"record titled \" + title).to.be.an(\"object\");\n    pm.collectionVariables.set(\"rt_record_id_b\", rec.id_record);\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User_A - login",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Message is \\\"Logged in!\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User_A - delete the record of user_B",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 404\", function () {\n    pm.response.to.have.status(404);\n});\n\npm.test(\"Record not found - status\", function () {\n    var jsonData = pm.response.json();\n    pm.expect(jsonData.message).to.eql(\"Record not found\");\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-delete/{{rt_record_id_b}}",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-delete",
+                    "{{rt_record_id_b}}"
+                  ]
+                },
+                "description": "**Summary:** deletion attempt returns `200 OK` instead of `404 Not Found`.\n\n**Steps to Reproduce:**\n\n1. Authenticate as User A.\n    \n2. Send a `DELETE` request to `/api/diary-delete/{{rt_record_id_b}}` targeting a record owned by User B.\n    \n\n**Actual Behavior:**  \nThe API responds with `200 OK` and indicates the record was deleted, even though no deletion occurred.\n\n**Expected Behavior:**  \nThe API should respond with `404 Not Found` and the following body:\n\n``` json\n{ \"message\": \"Record not found\" }\n\n ```\n\n**Acceptance Criteria:**\n\n- User A cannot delete records belonging to User B.\n    \n- The record of User B remains intact after the request.\n    \n- The response status is `404` with the message above."
+              },
+              "response": []
+            },
+            {
+              "name": "User_B - login again",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Message is \\\"Logged in!\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email_b}}\",\n  \"password\": \"{{password_b}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User_B - record is untouched",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Title was not changed by user A\", function () {\n    pm.expect(pm.response.json().title).to.eql(pm.collectionVariables.get(\"rt_title_b\"));\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-record/{{rt_record_id_b}}",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-record",
+                    "{{rt_record_id_b}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User_B - delete own record (cleanup)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Message is \\\"Record deleted\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Record deleted\");\n});\n\npm.collectionVariables.unset(\"rt_title_b\");\npm.collectionVariables.unset(\"rt_record_id_b\");"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-delete/{{rt_record_id_b}}",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-delete",
+                    "{{rt_record_id_b}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "User_A - login again (restore session)",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Message is \\\"Logged in!\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");\n});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/login",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "**Summary:** deletion attempt returns `200 OK` instead of `404 Not Found`.\n\n**Steps to Reproduce:**\n\n1. Authenticate as User A.\n    \n2. Send a `DELETE` request to `/api/diary-delete/{{rt_record_id_b}}` targeting a record owned by User B.\n    \n\n**Actual Behavior:**  \nThe API responds with `200 OK` and indicates the record was deleted, even though no deletion occurred.\n\n**Expected Behavior:**  \nThe API should respond with `404 Not Found` and the following body:\n\n``` json\n{ \"message\": \"Record not found\" }\n\n ```\n\n**Acceptance Criteria:**\n\n- User A cannot delete records belonging to User B.\n    \n- The record of User B remains intact after the request.\n    \n- The response status is `404` with the message above."
+        },
+        {
+          "name": "Setup - Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Logged in!\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            },
+            "description": "Bug 3 needs a valid session to show that a valid token is reported as invalid."
+          },
+          "response": []
+        },
+        {
+          "name": "register with paswrd < 6 symbols",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Unique data for this request only (local variables, nothing is persisted).",
+                  "const stamp = Date.now();",
+                  "const base = String(pm.variables.get(\"email\") || \"qa.user@example.com\");",
+                  "const at = base.lastIndexOf(\"@\");",
+                  "pm.variables.set(\"unique_email\", base.slice(0, at) + \"+qa\" + stamp + base.slice(at));",
+                  "pm.variables.set(\"unique_username\", \"qa_user_\" + stamp);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400 (password shorter than 6 characters is rejected)\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Password must be at least 6 characters long.\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Password must be at least 6 characters long.\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"Ilkarion_API\",\r\n  \"email\": \"{{unique_email}}\",\r\n  \"password\":\"12345\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/register",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "register"
+              ]
+            },
+            "description": "## Bug: Server Does Not Validate Password Length During Registration\n\nThe frontend prevents the user from submitting a password shorter than 6 characters. However, when the same request is sent directly to the server via Postman, the server does not validate the password length and may return a success status.\n\n**Requirement:** The password must be at least 6 characters long.\n\n### Steps to Fix the Bug\n\n1. Open the server-side code.\n    \n2. Locate the registration endpoint.\n    \n3. Add server-side validation to ensure the password contains at least 6 characters.\n    \n4. { \"message\": \"Password must be at least 6 characters long.\"}\n    \n\n### Steps to Reproduce the Bug\n\n1. Open the [registration page](https://diary-cosmic-liard.vercel.app/en/sign).\n    \n2. Try to register with a password containing 1–5 characters.\n    \n3. Observe that the frontend displays a validation error.\n    \n4. Open Postman and send the same registration request directly to the server, using a password containing 1–5 characters.\n    \n5. Observe that the server returns a success status instead of rejecting the invalid request.\n    \n\n### Expected Result\n\nThe server should reject registration requests containing passwords shorter than 6 characters and return an appropriate error response.\n\n### Actual Result\n\nThe server accepts the request and returns a success status despite the password violating the requirement."
+          },
+          "response": []
+        },
+        {
+          "name": "register with no name",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Unique data for this request only (local variables, nothing is persisted).",
+                  "const stamp = Date.now();",
+                  "const base = String(pm.variables.get(\"email\") || \"qa.user@example.com\");",
+                  "const at = base.lastIndexOf(\"@\");",
+                  "pm.variables.set(\"unique_email\", base.slice(0, at) + \"+qa\" + stamp + base.slice(at));",
+                  "pm.variables.set(\"unique_username\", \"qa_user_\" + stamp);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400 (empty username is rejected)\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Username is required.\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Username is required.\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n  \"username\": \"\",\r\n  \"email\": \"{{unique_email}}\",\r\n  \"password\":\"{{password}}\"\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/register",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "register"
+              ]
+            },
+            "description": "## Bug: Server Does Not Validate Username During Registration\n\nThe frontend prevents users from submitting the registration form without a username. However, when the same request is sent directly to the server via Postman, the server does not validate the username field and may return a success status.\n\n**Requirement:** A username must be provided during registration.\n\n### Steps to Fix the Bug\n\n1. Open the server-side code.\n    \n2. Locate the registration endpoint.\n    \n3. Add server-side validation to ensure that the username is provided.\n    \n4. { \"message\": \"Username is required.\"}\n    \n\n### Steps to Reproduce the Bug\n\n1. Open the [registration page](https://diary-cosmic-liard.vercel.app/en/sign).\n    \n2. Try to register without entering a username.\n    \n3. Observe that the frontend displays a validation error.\n    \n4. Open Postman and send the registration request directly to the server without a username.\n    \n5. Observe that the server returns a success status instead of rejecting the invalid request.\n    \n\n### Expected Result\n\nThe server should reject registration requests with a missing or empty username and return an appropriate error response.\n\n### Actual Result\n\nThe server accepts the request and returns a success status even though the required username is missing."
+          },
+          "response": []
+        },
+        {
+          "name": "edit record with no `record` object",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Error message is \\\"Invalid json object\\\" (expected after the fix)\", function () {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.expect(jsonData.message).to.eql(\"Invalid json object\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\r\n    \"id_record\": \"c72aee5f-fc3c-4ed1-9413-4860733eb4b5\",\r\n    \"title\": \"My day at the park (edited)\",\r\n    \"date\": \"2026-10-26\",\r\n    \"feels\": [\r\n      \"happy\"\r\n    ],\r\n    \"tags\": [\r\n      \"outdoors\",\r\n      \"fun\"\r\n    ],\r\n    \"color_Tags\": [\r\n      \"green\",\r\n      \"blue\"\r\n    ],\r\n    \"highlights\": [\r\n      {\r\n        \"text\": \"Had a great picnic\",\r\n        \"color\": \"green\"\r\n      }\r\n    ],\r\n    \"all_Tags\": [\r\n      \"outdoors\",\r\n      \"fun\",\r\n      \"apple\"\r\n    ],\r\n    \"all_Color_Tags\": [\r\n      \"green\",\r\n      \"blue\",\r\n      \"purple\"\r\n    ]\r\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/diary-edit",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "diary-edit"
+              ]
+            },
+            "description": "When a request is sent to `/api/diary-edit` without wrapping the payload inside a `record` object, the API returns an incorrect error message.\n\n---\n\n### Steps to Reproduce\n\n1. Send a `POST` request to `{{base}}/api/diary-edit`.\n    \n2. Include a valid-looking JSON body but **without** the required `record` wrapper object.\n    \n3. Observe the response.\n    \n\n---\n\n### Actual Result\n\n``` json\n{ \"message\": \"Invalid token\" }\n\n ```\n\n---\n\n### Expected Result\n\n``` json\n{ \"message\": \"Invalid json object\" }\n\n ```\n\n---\n\n### Impact\n\nThe misleading error message (`\"Invalid token\"`) suggests an authentication problem rather than a malformed request body. This makes debugging harder for API consumers, as they may incorrectly investigate their auth token instead of their request payload structure.\n\n---\n\n### Severity\n\n**Medium** — Incorrect error messaging; does not expose sensitive data but causes confusion."
+          },
+          "response": []
+        },
+        {
+          "name": "delete record with non-existent id",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 404 (nothing was deleted)\", function () {",
+                  "    pm.response.to.have.status(404);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Record not found\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Record not found\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/diary-delete/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "diary-delete",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            },
+            "description": "## Bug (to verify): Deleting a record that does not exist reports success\n\n**Status:** Unconfirmed. Derived from the API specification (the handler answers 200 whenever the database reports no error). Run this request to confirm. If both tests pass, move it to the regression tests.\n\n**Requirement:** The API must tell the client when nothing was deleted.\n\n### Steps to Reproduce the Bug\n\n1. Log in.\n2. Send a `DELETE` request to `{{base}}/api/diary-delete/00000000-0000-0000-0000-000000000000`.\n3. Observe the response.\n\n### Expected Result\n\n``` json\nHTTP 404\n{ \"message\": \"Record not found\" }\n\n ```\n\n### Actual Result\n\n``` json\nHTTP 200\n{ \"message\": \"Record deleted\" }\n\n ```\n\n### Impact\n\nThe client cannot tell a real deletion from a deletion of a wrong id, so errors in the client code stay hidden.\n\n### Severity\n\n**Low**"
+          },
+          "response": []
+        },
+        {
+          "name": "Setup - Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Logged out\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Logged out\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/logout",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "logout"
+              ]
+            },
+            "description": "Clears the session cookies so a manual `Cookie` header is the only credential of the next request."
+          },
+          "response": []
+        },
+        {
+          "name": "change e-mail request with invalid token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 401 (invalid token)\", function () {",
+                  "    pm.response.to.have.status(401);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Invalid token\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Invalid token\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Cookie",
+                "value": "access_token=invalid.token.value",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newEmail\": \"someone.else@example.com\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/change-email-request",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "change-email-request"
+              ]
+            },
+            "description": "## Bug (to verify): Invalid access token on `/api/change-email-request` returns 500 instead of 401\n\n**Status:** Unconfirmed. Derived from the API specification (every error inside the handler, including a bad token, is answered with 500). Run this request to confirm.\n\n**Requirement:** All protected endpoints answer an invalid or expired token with `401 { \"message\": \"Invalid token\" }`.\n\n### Steps to Reproduce the Bug\n\n1. Make sure no session cookies are stored (run `Setup - Logout` first).\n2. Send a `POST` request to `{{base}}/api/change-email-request` with the header `Cookie: access_token=invalid.token.value`.\n3. Observe the response.\n\n### Expected Result\n\n``` json\nHTTP 401\n{ \"message\": \"Invalid token\" }\n\n ```\n\n### Actual Result\n\n``` json\nHTTP 500\n{ \"message\": \"Server error\" }\n\n ```\n\n### Impact\n\nA client cannot tell an expired session (should log in again) from a real server failure. Server errors are also counted as incidents in monitoring.\n\n### Severity\n\n**Medium**"
+          },
+          "response": []
+        }
+      ],
+      "description": "Known defects. The tests assert the EXPECTED behaviour, so they fail until the bug is fixed. The first three bugs were found by comparing frontend and backend validation; the last three are marked in their description as confirmed or to verify."
+    },
+    {
+      "name": "Logout & access control",
+      "item": [
+        {
+          "name": "No token (403)",
+          "item": [
+            {
+              "name": "Get current user - no cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/me",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "me"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List records - no cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Add record - no cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"should not be saved\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/diary-send",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-send"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get all tags - no cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-allTags",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-allTags"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get record - no cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-record/00000000-0000-0000-0000-000000000000",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-record",
+                    "00000000-0000-0000-0000-000000000000"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Edit record - no cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"record\": {\n    \"id_record\": \"00000000-0000-0000-0000-000000000000\",\n    \"title\": \"should not be saved\",\n    \"date\": \"2026-10-26\",\n    \"feels\": [\n      \"happy\"\n    ],\n    \"tags\": [\n      \"outdoors\",\n      \"fun\"\n    ],\n    \"color_Tags\": [\n      \"green\",\n      \"blue\"\n    ],\n    \"highlights\": [\n      {\n        \"text\": \"Had a great picnic\",\n        \"color\": \"green\"\n      }\n    ],\n    \"all_Tags\": [\n      \"outdoors\",\n      \"fun\",\n      \"apple\"\n    ],\n    \"all_Color_Tags\": [\n      \"green\",\n      \"blue\",\n      \"purple\"\n    ]\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/diary-edit",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-edit"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete record - no cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/diary-delete/00000000-0000-0000-0000-000000000000",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-delete",
+                    "00000000-0000-0000-0000-000000000000"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change username - no cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"should_not_be_saved\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-username",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-username"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change password - no cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"x\",\n  \"newPassword\": \"y\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-password",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change e-mail request - no cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"newEmail\": \"someone@example.com\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-email-request",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-email-request"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete account - no cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 403\", function () {",
+                      "    pm.response.to.have.status(403);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/user-delete",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "user-delete"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Refresh token - no refresh cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 401\", function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"No refresh token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"No refresh token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base}}/api/refresh",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "refresh"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "Every protected endpoint must refuse requests that carry no session cookie."
+        },
+        {
+          "name": "Invalid token (401)",
+          "item": [
+            {
+              "name": "Get current user - invalid token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 401\", function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Invalid token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Invalid token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "GET",
+                "header": [
+                  {
+                    "key": "Cookie",
+                    "value": "access_token=invalid.token.value",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base}}/api/me",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "me"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "List records - invalid token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 401\", function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Invalid token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Invalid token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Cookie",
+                    "value": "access_token=invalid.token.value",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base}}/api/diary",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get all tags - invalid token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 401\", function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Invalid token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Invalid token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Cookie",
+                    "value": "access_token=invalid.token.value",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base}}/api/diary-allTags",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "diary-allTags"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change username - invalid token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 401\", function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Invalid token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Invalid token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "access_token=invalid.token.value",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"username\": \"should_not_be_saved\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-username",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-username"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Change password - invalid token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 401\", function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Invalid token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Invalid token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json",
+                    "type": "text"
+                  },
+                  {
+                    "key": "Cookie",
+                    "value": "access_token=invalid.token.value",
+                    "type": "text"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"currentPassword\": \"x\",\n  \"newPassword\": \"y\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base}}/api/change-password",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "change-password"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete account - invalid token",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 401\", function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Invalid token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Invalid token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Cookie",
+                    "value": "access_token=invalid.token.value",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base}}/api/user-delete",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "user-delete"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Refresh token - invalid refresh cookie",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test(\"Status code is 401\", function () {",
+                      "    pm.response.to.have.status(401);",
+                      "});",
+                      "",
+                      "pm.test(\"Content-Type is application/json\", function () {",
+                      "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                      "});",
+                      "",
+                      "pm.test(\"Message is \\\"Invalid refresh token\\\"\", function () {",
+                      "    pm.expect(pm.response.json().message).to.eql(\"Invalid refresh token\");",
+                      "});"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Cookie",
+                    "value": "refresh_token=invalid.token.value",
+                    "type": "text"
+                  }
+                ],
+                "url": {
+                  "raw": "{{base}}/api/refresh",
+                  "host": [
+                    "{{base}}"
+                  ],
+                  "path": [
+                    "api",
+                    "refresh"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "description": "A forged cookie must be rejected. Works because the session was cleared by the logout above."
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Content-Type is application/json\", function () {\n    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\n});\n\npm.test(\"Message is \\\"Logged out\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Logged out\");\n});\n\nconst setCookies = [];\npm.response.headers.each(function (h) {\n    if (h.key.toLowerCase() === \"set-cookie\") {\n        setCookies.push(h.value);\n    }\n});\n\npm.test(\"access_token cookie is cleared\", function () {\n    const c = setCookies.find(function (v) { return v.indexOf(\"access_token=\") === 0; });\n    pm.expect(c, \"access_token Set-Cookie header\").to.be.a(\"string\");\n    pm.expect(c).to.match(/^access_token=;/);\n});\n\npm.test(\"refresh_token cookie is cleared\", function () {\n    const c = setCookies.find(function (v) { return v.indexOf(\"refresh_token=\") === 0; });\n    pm.expect(c, \"refresh_token Set-Cookie header\").to.be.a(\"string\");\n    pm.expect(c).to.match(/^refresh_token=;/);\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/logout",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "logout"
+              ]
+            },
+            "description": "Ends the session. Both cookies are cleared in the browser (the JWTs themselves are not revoked on the server)."
+          },
+          "response": []
+        }
+      ],
+      "description": "Ends the session and checks that protected endpoints refuse requests without a valid session."
+    },
+    {
+      "name": "Destructive (manual)",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Logged in!\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Logged in!\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 200\", function () {\n    pm.response.to.have.status(200);\n});\n\npm.test(\"Content-Type is application/json\", function () {\n    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");\n});\n\npm.test(\"Message is \\\"Account deleted\\\"\", function () {\n    pm.expect(pm.response.json().message).to.eql(\"Account deleted\");\n});\n\npm.test(\"access_token is cleared\", () => {\n    const val = pm.cookies.get(\"access_token\");\n    pm.expect(val === \"undefined\" || val === undefined).to.be.true;\n});\n\npm.test(\"refresh_token is cleared\", () => {\n    const val = pm.cookies.get(\"refresh_token\");\n    console.log(val)\n    pm.expect(val === \"undefined\" || val === undefined).to.be.true;\n});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/user-delete",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "user-delete"
+              ]
+            },
+            "description": "Deletes the test account for good (no password confirmation is required). Afterwards the account has to be registered and confirmed again."
+          },
+          "response": []
+        },
+        {
+          "name": "Login - deleted account",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 400\", function () {",
+                  "    pm.response.to.have.status(400);",
+                  "});",
+                  "",
+                  "pm.test(\"Content-Type is application/json\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"Invalid email or password\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"Invalid email or password\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{email}}\",\n  \"password\": \"{{password}}\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base}}/api/login",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get current user - after deletion",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status code is 403\", function () {",
+                  "    pm.response.to.have.status(403);",
+                  "});",
+                  "",
+                  "pm.test(\"Content-Type is application/json\", function () {",
+                  "    pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"application/json\");",
+                  "});",
+                  "",
+                  "pm.test(\"Message is \\\"No token\\\"\", function () {",
+                  "    pm.expect(pm.response.json().message).to.eql(\"No token\");",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base}}/api/me",
+              "host": [
+                "{{base}}"
+              ],
+              "path": [
+                "api",
+                "me"
+              ]
+            }
+          },
+          "response": []
+        }
+      ],
+      "description": "Skipped unless collection variable `allow_destructive` is `true`. Deletes the test account.",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Safety guard: this request is skipped unless collection variable \"allow_destructive\" is \"true\".\nif (pm.variables.get(\"allow_destructive\") !== \"true\") {\n    if (pm.execution && typeof pm.execution.skipRequest === \"function\") {\n        pm.execution.skipRequest();\n    } else {\n        throw new Error(\"Blocked: set collection variable allow_destructive=true to run destructive requests\");\n    }\n}"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "test",
+      "script": {
+        "exec": [
+          "pm.test(\"Response time is within the limit\", function () {",
+          "    const limit = Number(pm.variables.get(\"max_response_ms\")) || 6000;",
+          "    pm.expect(pm.response.responseTime, \"response time in ms (limit \" + limit + \")\").to.be.below(limit);",
+          "});"
+        ],
+        "type": "text/javascript"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "base",
+      "value": "https://your-book-backend.onrender.com"
+    },
+    {
+      "key": "email",
+      "value": "mastercomponents6@gmail.com"
+    },
+    {
+      "key": "password",
+      "value": "passworD_2006"
+    },
+    {
+      "key": "username",
+      "value": "Ilkarion_Api"
+    },
+    {
+      "key": "new_password",
+      "value": "passworD_2006_NEW"
+    },
+    {
+      "key": "email_b",
+      "value": "huglove0001@gmail.com"
+    },
+    {
+      "key": "password_b",
+      "value": "password123_B"
+    },
+    {
+      "key": "allow_email_tests",
+      "value": "true"
+    },
+    {
+      "key": "allow_destructive",
+      "value": "true"
+    },
+    {
+      "key": "max_response_ms",
+      "value": "50000"
+    }
+  ]
+}
