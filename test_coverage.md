@@ -4,7 +4,7 @@ Navigation: [Project](https://github.com/Ilkarion/APITesting_Your_diary) · [Tes
 
 | File | Purpose |
 |---|---|
-| [Your_Diary_API.postman_collection.json]([Your_Diary_API.postman_collection.json](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Your-Diary%20API.postman_collection.json)) | The collection (96 requests) and with environment variables |
+| [Your_Diary_API.postman_collection.json](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Your-Diary%20API.postman_collection.json) | The collection (96 requests) and with environment variables |
 
 
 ## 1. How the collection is organised
