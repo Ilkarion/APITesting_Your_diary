@@ -15,10 +15,6 @@ Navigation: [Project](https://github.com/Ilkarion/APITesting_Your_diary) · [Bug
 | Tester | Ilkarion |
 | Variables enabled | `allow_email_tests`: *true* · `allow_destructive`: *true* · `second account`: *yes* ...|
 
-## 2. Execution scope
-
-Planned: the 42 test cases in [Test_Cases.md](Test_Cases.md), executed through the 96 requests of the collection. Groups that need extra setup are skipped by the collection unless enabled: e-mail tests (REG-01, REG-05, ACC-07), cross-user tests (SEC-01 to SEC-04) and the destructive test.
-
 ## 3. Summary of results
 
 Counts are of **test cases**. Evidence-based counts are zero because nothing has been executed with recorded evidence.
