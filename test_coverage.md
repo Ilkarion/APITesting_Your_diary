@@ -60,6 +60,11 @@ Select the folder's first request and run in order. Chains (CRUD flow, username,
 4. Do not clear cookies between requests; the session depends on the cookie jar.
 5. See result; see [Example](https://github.com/Ilkarion/APITesting_Your_diary/tree/main/imgs).
 
+## Attention:
+If u want run my collection --> create new accounts, register them(User A and User B) and confirm Email from link(Sender: 'Light')
+If u already registered then befor u run all collection **UNCHECK** register endpoints.
+<img src="img/no-register-postman.png" width="400" height="400" alt="Screenshot">
+
 ## 6. Interpret results
 
 | Observation | Meaning |
