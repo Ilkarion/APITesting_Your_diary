@@ -1,6 +1,6 @@
 # Test Plan: Your Diary API
 
-Navigation:  · [Test Cases](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Test_Cases.md) · [Test Coverage](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/test_coverage.md) · [Execution Report](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Test_Execution_Report.md)
+Navigation:  · [Test Coverage](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/test_coverage.md) · [Execution Report](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Test_Execution_Report.md)
 
 This is a personal portfolio project. There is no formal requirements document and no QA team. The plan is written by one person.
 
@@ -82,7 +82,7 @@ Planned criteria (all must hold before a run):
 
 Planned criteria:
 
-- All collection test cases executed at least once and results recorded.
+- All collection test cases(in postman) executed at least once and results recorded.
 - Every failure analysed and classified as defect or potential issue.
 - Potential issues either confirmed with evidence or closed.
 - Coverage gaps listed in [Test_Coverage.md](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/test_coverage.md).
@@ -92,7 +92,6 @@ Planned criteria:
 | Deliverable | File |
 |---|---|
 | Test plan | this file |
-| Test cases | [Test_Cases.md](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Test_Cases.md) |
 | Coverage and traceability | [Test_Coverage.md](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/test_coverage.md) |
 | Execution report | [Test_Execution_Report.md](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Test_Execution_Report.md) |
 | Bug and potential issue reports | [Bug_Reports.md](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/bugs-report.md) |
