@@ -71,7 +71,7 @@ Select the folder's first request and run in order. Chains (CRUD flow, username,
 | Response-time failure | Limit is 6000 ms (60000 ms for the first request). Check cold start or network before suspecting the API. |
 
 
-## 8. Known limitations and prerequisites
+## 8. Known limitations
 
 - `GET /api/confirm` and `GET /api/change-email-confirm` have no requests.
 - E-mail receipt and confirmation links are not verified.
