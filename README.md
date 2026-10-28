@@ -7,6 +7,17 @@
 
 # API Testing — Your Diary
 
+<div align="center">
+  <img src="imgs/bugs-example.png" width="48%" />
+  <img src="imgs/confirm-email.png" width="48%" />
+</div>
+
+<div align="center">
+  <img src="imgs/no-register-postman.png" width="48%" />
+  <img src="imgs/run results.png" width="48%" />
+</div>
+
+
 ## Project Overview
 
 This project demonstrates manual API testing with Postman test scripts (JavaScript) API testing of a diary application using Postman.
