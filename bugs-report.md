@@ -11,7 +11,7 @@
 ---
 
 ### User_A - delete the record of user_B.
-<span style="color:orange">< Status: Open ></span>
+> Status: Open
 
 `{{base}}/api/diary-delete/{{rt_record_id_b}}`
 
@@ -41,7 +41,7 @@ The API should respond with 404 Not Found and the following body:
 ---
 
 ### register with paswrd < 6 symbols.
-<span style="color:orange">< Status: Open ></span>
+> Status: Open
 
 `{{base}}/api/register`
 
@@ -75,7 +75,7 @@ The server accepts the request and returns a success status despite the password
 ---
 
 ### register with no name
-<span style="color:orange">< Status: Open ></span>
+> Status: Open
 
 `{{base}}/api/register`
 
@@ -109,7 +109,7 @@ The server accepts the request and returns a success status even though the requ
 ---
 
 ### edit record with no `record` object
-<span style="color:orange">< Status: Open ></span>
+> Status: Open
 
 `{{base}}/api/diary-edit`
 
@@ -142,7 +142,7 @@ Medium — Incorrect error messaging; does not expose sensitive data but causes 
 ---
 
 ### delete record with non-existent id
-<span style="color:orange">< Status: Open ></span>
+> Status: Open
 
 `{{base}}/api/diary-delete/00000000-0000-0000-0000-000000000000`
 
@@ -181,7 +181,7 @@ Low
 ---
 
 ### change e-mail request with invalid token
-<span style="color:orange">< Status: Open ></span>
+> Status: Open
 
 `{{base}}/api/change-email-request`
 
