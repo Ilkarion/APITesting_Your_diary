@@ -10,7 +10,7 @@
 
 ---
 
-### User_A - delete the record of user_B.
+### 1) User_A - delete the record of user_B.
 > Status: Open
 
 `{{base}}/api/diary-delete/{{rt_record_id_b}}`
@@ -40,8 +40,9 @@ The API should respond with 404 Not Found and the following body:
 
 ---
 
-### register with paswrd < 6 symbols.
+### 2) register with paswrd < 6 symbols.
 > Status: Open
+> The API documentation does not require this; the rule exists only in the frontend. Validation mismatch between frontend and backend.
 
 `{{base}}/api/register`
 
@@ -74,8 +75,9 @@ The server accepts the request and returns a success status despite the password
 
 ---
 
-### register with no name
+### 3) register with no name
 > Status: Open
+> The API documentation does not require this; the rule exists only in the frontend. Validation mismatch between frontend and backend.
 
 `{{base}}/api/register`
 
@@ -108,7 +110,7 @@ The server accepts the request and returns a success status even though the requ
 
 ---
 
-### edit record with no `record` object
+### 4) edit record with no `record` object
 > Status: Open
 
 `{{base}}/api/diary-edit`
@@ -141,7 +143,7 @@ Medium — Incorrect error messaging; does not expose sensitive data but causes 
 
 ---
 
-### delete record with non-existent id
+### 5) delete record with non-existent id
 > Status: Open
 
 `{{base}}/api/diary-delete/00000000-0000-0000-0000-000000000000`
@@ -180,7 +182,7 @@ Low
 
 ---
 
-### change e-mail request with invalid token
+### 6) change e-mail request with invalid token
 > Status: Open
 
 `{{base}}/api/change-email-request`
