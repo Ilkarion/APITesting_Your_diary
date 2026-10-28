@@ -9,7 +9,6 @@
 
 <div align="center">
   <img src="imgs/bugs-example.png" width="48%" />
-  <img src="imgs/confirm-email.png" width="48%" />
 </div>
 
 <div align="center">
