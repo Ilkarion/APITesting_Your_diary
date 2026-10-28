@@ -1,4 +1,4 @@
-Examples of running the endpoints to check whether the bugs have been fixed:
+## Issues found during API testing. Status: Open.
 
 <img src="imgs/bugs-example.png" width="400" height="400" alt="Screenshot">
 
@@ -6,11 +6,11 @@ Examples of running the endpoints to check whether the bugs have been fixed:
 
 ---
 
-## BUGS DESCRIBTION:
+## Bugs Description:
 
 ---
 
-### User_A - delete the record of user_B
+### User_A - delete the record of user_B. < Status: Open >
 
 `{{base}}/api/diary-delete/{{rt_record_id_b}}`
 
@@ -39,7 +39,7 @@ The API should respond with 404 Not Found and the following body:
 
 ---
 
-### register with paswrd < 6 symbols
+### register with paswrd < 6 symbols. <span style="color: orange">Status: Open</span>  
 
 `{{base}}/api/register`
 
