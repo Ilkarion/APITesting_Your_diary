@@ -42,6 +42,7 @@ The API should respond with 404 Not Found and the following body:
 
 ### 2) register with paswrd < 6 symbols.
 > Status: Open
+
 > The API documentation does not require this; the rule exists only in the frontend. Validation mismatch between frontend and backend.
 
 `{{base}}/api/register`
@@ -77,6 +78,7 @@ The server accepts the request and returns a success status despite the password
 
 ### 3) register with no name
 > Status: Open
+
 > The API documentation does not require this; the rule exists only in the frontend. Validation mismatch between frontend and backend.
 
 `{{base}}/api/register`
