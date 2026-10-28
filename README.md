@@ -9,9 +9,6 @@
 
 <div align="center">
   <img src="imgs/bugs-example.png" width="350" />
-</div>
-
-<div align="center">
   <img src="imgs/no-register-postman.png" width="350" />
   <img src="imgs/run results.png" width="350" />
 </div>
