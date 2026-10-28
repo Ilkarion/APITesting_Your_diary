@@ -3,7 +3,7 @@
 - API Documentation: [Swagger UI](https://ilkarion.github.io/APITesting_Your_diary/)
 - Postman Collection: [Postman](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Your-Diary%20API.postman_collection.json)
 - Test Plan: [Plan](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Test_Plan.md)
-- [Steps to run my collection](#Steps to run my collection)
+- [Steps to run my collection](#steps-to-run-my-collection)
 
 
 # API Testing — Your Diary
