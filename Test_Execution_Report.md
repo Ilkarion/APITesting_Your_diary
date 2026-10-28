@@ -2,7 +2,7 @@
 
 Navigation: [Project](https://github.com/Ilkarion/APITesting_Your_diary) · [Bug Reports](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/bugs-report.md) · [Test Coverage](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/test_coverage.md) · [Test Plan](https://github.com/Ilkarion/APITesting_Your_diary/blob/main/Test_Plan.md)
 
-> **Status: executed.  Date: 24.10.2026. Postman 12.34.1** The materials supplied for this project contain the Postman collection and the API documentation, but **not ALL run results**: no saved responses, no collection run export **just** screenshots. Thus, this report serves as a brief introduction.
+> **Status: executed.  Date: 24.10.2026. Postman 12.34.1** The materials supplied for this project contain the Postman collection and the API documentation, but **not ALL run results**: no collection run export **just** screenshots. This report serves as a brief introduction.
 
 ## 1. Project and environment
 
