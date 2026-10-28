@@ -39,7 +39,7 @@ The API should respond with 404 Not Found and the following body:
 
 ---
 
-### register with paswrd < 6 symbols. <span style="color: orange">Status: Open</span>  
+### register with paswrd < 6 symbols. <span style="color:orange">some *blue* text</span>
 
 `{{base}}/api/register`
 
